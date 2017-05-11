@@ -1,28 +1,24 @@
 require_dependency 'watchers_controller'
 
 module ExtendedWatchersControllerPatch
-    
-    def self.included(base)
-        base.send(:include, InstanceMethods)
-        base.class_eval do
-            unloadable
-
-            alias_method_chain :autocomplete_for_user, :extwatch
-        end
+  def self.included(base)
+    base.send(:include, InstanceMethods)
+    base.class_eval do
+      alias_method_chain :users_for_new_watcher, :extwatch
     end
+  end
 
-    module InstanceMethods
+  module InstanceMethods
+    def users_for_new_watcher_with_extwatch
+      users = if params[:q].present?
+                User.all.active.visible.like(params[:q]).sorted.limit(100).to_a
+              else
+                @project.users.to_a
+              end
+      users = users.select { |usr| usr.allowed_to?(:view_issues, @project) }
+      users -= @watched.watcher_users if @watched
 
-        def autocomplete_for_user_with_extwatch
-          @users = User.active.sorted.like(params[:q]).limit(100).all
-          @users.reject! {|user| !user.allowed_to?(:view_issues, @project)}
-          if @watched
-            @users -= @watched.watcher_users
-          end
-          render :layout => false
-        end
-
+      users
     end
-
+  end
 end
-
