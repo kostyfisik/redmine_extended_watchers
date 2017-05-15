@@ -13,7 +13,7 @@ module ExtendedWatchersControllerPatch
       users = if params[:q].present?
                 User.all.active.visible.like(params[:q]).sorted.limit(100).to_a
               else
-                @project.users.to_a
+                @project.users.sorted.to_a
               end
       users = users.select { |usr| usr.allowed_to?(:view_issues, @project) }
       users -= @watched.watcher_users if @watched
